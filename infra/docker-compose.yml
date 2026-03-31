@@ -1,0 +1,15 @@
+version: '3.8' # Versión del formato de Docker Compose
+
+services:
+  # Servicio 1: El Broker MQTT
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: sleep_monitor_broker
+    ports:
+      - "1883:1883" # Puerto para el ESP32 y Go
+      - "9001:9001" # Puerto para el Dashboard Web (WebSockets)
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    restart: always # Si el PC se reinicia, el broker arranca solo
