@@ -1,0 +1,7 @@
+# Binarios
+main
+backend_server
+*.exe
+
+# Dependencias (si usaras vendor, que no es el caso)
+# vendor/
