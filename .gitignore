@@ -10,3 +10,5 @@ Thumbs.db
 # Docker logs
 infra/mosquitto/log/*.log
 infra/mosquitto/data/
+
+.atl/
