@@ -11,102 +11,154 @@
 #define DHT_TYPE DHT11
 
 // --- Calibration & Timing ---
-const int LDR_FLOOR      = 15;
-const int LDR_CEIL       = 1500;
-const int DHT_TICK_MS    = 2500;
+const int           LDR_FLOOR            = 15;
+const int           LDR_CEIL             = 1500;
+const unsigned long DHT_INTERVAL         = 2500;
+const unsigned long WIFI_RETRY_INTERVAL  = 500;
+const unsigned long MQTT_RETRY_INTERVAL  = 3000;
+const int           SENSOR_ERROR_MAX     = 5;
 
-// --- Global Objects & State ---
-DHT         dht(PIN_DHT, DHT_TYPE);
-WiFiClient  wifiClient;
+// --- State Machine ---
+enum class NodeState {
+    CONNECTING_WIFI,
+    CONNECTING_MQTT,
+    RUNNING,
+    SENSOR_ERROR
+};
+
+// --- Global Objects ---
+DHT          dht(PIN_DHT, DHT_TYPE);
+WiFiClient   wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-unsigned long lastDhtRead = 0;
-float currentTemp = 0;
-float currentHum  = 0;
+NodeState     state        = NodeState::CONNECTING_WIFI;
+unsigned long lastAction   = 0;
+unsigned long lastDhtRead  = 0;
+int           sensorErrors = 0;
 
 // --- Prototypes ---
+void handleConnectingWiFi();
+void handleConnectingMQTT();
+void handleRunning();
+void handleSensorError();
+void transitionTo(NodeState next, const char* reason);
 int  readLightPercentage();
-void broadcastData(float t, float h, int l);
-void connectWiFi();
-void connectMQTT();
-void ensureConnections();
+void publishData(float t, float h, int l);
 
 void setup() {
     Serial.begin(115200);
     dht.begin();
     analogSetAttenuation(ADC_11db);
-
-    connectWiFi();
-
     mqttClient.setServer(MQTT_BROKER_IP, MQTT_BROKER_PORT);
-    connectMQTT();
 
-    Serial.println("{\"status\": \"Climate_Light_Node_Ready\"}");
+    Serial.println("[INIT] Climate_Light_Node starting");
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
 
 void loop() {
-    ensureConnections();
     mqttClient.loop();
 
-    if (millis() - lastDhtRead >= DHT_TICK_MS) {
-        float h     = dht.readHumidity();
-        float t     = dht.readTemperature();
-        int   light = readLightPercentage();
-
-        if (isnan(h) || isnan(t)) {
-            Serial.println("{\"error\": \"DHT_Sensor_Communication_Failed\"}");
-        } else {
-            currentTemp = t;
-            currentHum  = h;
-            broadcastData(currentTemp, currentHum, light);
-        }
-
-        lastDhtRead = millis();
+    switch (state) {
+        case NodeState::CONNECTING_WIFI: handleConnectingWiFi(); break;
+        case NodeState::CONNECTING_MQTT: handleConnectingMQTT(); break;
+        case NodeState::RUNNING:         handleRunning();        break;
+        case NodeState::SENSOR_ERROR:    handleSensorError();    break;
     }
 }
 
-void connectWiFi() {
-    Serial.printf("Connecting to WiFi: %s", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+void handleConnectingWiFi() {
+    if (millis() - lastAction < WIFI_RETRY_INTERVAL) return;
+    lastAction = millis();
 
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("[WIFI] Connected — IP: %s\n", WiFi.localIP().toString().c_str());
+        transitionTo(NodeState::CONNECTING_MQTT, "WiFi up");
+        return;
     }
 
-    Serial.printf("\nWiFi connected — IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.print(".");
 }
 
-void connectMQTT() {
-    while (!mqttClient.connected()) {
-        Serial.print("Connecting to MQTT broker...");
-
-        if (mqttClient.connect(MQTT_CLIENT_ID)) {
-            Serial.println(" connected.");
-        } else {
-            Serial.printf(" failed (state=%d). Retrying in 3s\n", mqttClient.state());
-            delay(3000);
-        }
-    }
-}
-
-// Reconnects WiFi and MQTT if either drops.
-void ensureConnections() {
+void handleConnectingMQTT() {
     if (WiFi.status() != WL_CONNECTED) {
-        connectWiFi();
+        transitionTo(NodeState::CONNECTING_WIFI, "WiFi lost during MQTT connect");
+        return;
     }
+
+    if (millis() - lastAction < MQTT_RETRY_INTERVAL) return;
+    lastAction = millis();
+
+    if (mqttClient.connect(MQTT_CLIENT_ID)) {
+        Serial.println("[MQTT] Connected to broker");
+        transitionTo(NodeState::RUNNING, "MQTT up");
+        return;
+    }
+
+    Serial.printf("[MQTT] Failed (state=%d), retrying...\n", mqttClient.state());
+}
+
+void handleRunning() {
+    if (WiFi.status() != WL_CONNECTED) {
+        transitionTo(NodeState::CONNECTING_WIFI, "WiFi lost");
+        return;
+    }
+
     if (!mqttClient.connected()) {
-        connectMQTT();
+        transitionTo(NodeState::CONNECTING_MQTT, "MQTT disconnected");
+        return;
     }
+
+    if (millis() - lastDhtRead < DHT_INTERVAL) return;
+    lastDhtRead = millis();
+
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+
+    if (isnan(h) || isnan(t)) {
+        sensorErrors++;
+        transitionTo(NodeState::SENSOR_ERROR, "DHT11 read failed");
+        return;
+    }
+
+    sensorErrors = 0;
+    publishData(t, h, readLightPercentage());
+}
+
+void handleSensorError() {
+    if (millis() - lastDhtRead < DHT_INTERVAL) return;
+    lastDhtRead = millis();
+
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+
+    if (!isnan(h) && !isnan(t)) {
+        sensorErrors = 0;
+        publishData(t, h, readLightPercentage());
+        transitionTo(NodeState::RUNNING, "DHT11 recovered");
+        return;
+    }
+
+    sensorErrors++;
+    Serial.printf("[SENSOR] DHT11 error #%d\n", sensorErrors);
+
+    if (sensorErrors >= SENSOR_ERROR_MAX) {
+        Serial.println("[SENSOR] Max errors reached — check wiring");
+    }
+}
+
+void transitionTo(NodeState next, const char* reason) {
+    const char* names[] = { "CONNECTING_WIFI", "CONNECTING_MQTT", "RUNNING", "SENSOR_ERROR" };
+    Serial.printf("[STATE] %s -> %s (%s)\n", names[(int)state], names[(int)next], reason);
+    state      = next;
+    lastAction = millis();
 }
 
 int readLightPercentage() {
-    int raw        = analogRead(PIN_LDR);
-    int percentage = map(raw, LDR_FLOOR, LDR_CEIL, 0, 100);
-    return constrain(percentage, 0, 100);
+    int raw = analogRead(PIN_LDR);
+    return constrain(map(raw, LDR_FLOOR, LDR_CEIL, 0, 100), 0, 100);
 }
 
-void broadcastData(float t, float h, int l) {
+void publishData(float t, float h, int l) {
     JsonDocument doc;
     doc["temperature"] = t;
     doc["humidity"]    = (int)h;
@@ -115,6 +167,7 @@ void broadcastData(float t, float h, int l) {
 
     char payload[128];
     serializeJson(doc, payload);
-
     mqttClient.publish(MQTT_TOPIC, payload);
+
+    Serial.printf("[PUB] %s\n", payload);
 }
