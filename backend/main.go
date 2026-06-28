@@ -10,6 +10,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"sleep-monitor/backend/internal/models"
 	"sleep-monitor/backend/internal/repository"
+	"sleep-monitor/backend/internal/scoring"
 )
 
 const topic = "sm/sensors"
@@ -27,12 +28,19 @@ func onMessage(repo repository.SensorRepository) mqtt.MessageHandler {
 			return
 		}
 
-		fmt.Printf("[%s] Temp: %.1f°C | Humidity: %d%% | Light: %d%% | Noise: %d%%\n",
+		score := scoring.Calculate(reading)
+
+		fmt.Printf("[%s] Temp: %.1f°C | Humidity: %d%% | Light: %d%% | Noise: %d%% | Score: %.1f (T:%.1f H:%.1f L:%.1f N:%.1f)\n",
 			time.Now().Format("15:04:05"),
 			reading.Temperature,
 			reading.Humidity,
 			reading.LightLevel,
 			reading.NoiseLevel,
+			score.Total,
+			score.Temperature,
+			score.Humidity,
+			score.Light,
+			score.Noise,
 		)
 	}
 }
