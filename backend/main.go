@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"sleep-monitor/backend/internal/api"
 	"sleep-monitor/backend/internal/models"
 	"sleep-monitor/backend/internal/repository"
 	"sleep-monitor/backend/internal/scoring"
@@ -82,5 +84,14 @@ func main() {
 
 	log.Printf("Subscribed to topic: %s — waiting for sensor data...\n", topic)
 
-	select {}
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "8080"
+	}
+
+	mux := http.NewServeMux()
+	api.NewHandler(repo).RegisterRoutes(mux)
+
+	log.Printf("HTTP server listening on :%s\n", httpPort)
+	log.Fatal(http.ListenAndServe(":"+httpPort, mux))
 }
