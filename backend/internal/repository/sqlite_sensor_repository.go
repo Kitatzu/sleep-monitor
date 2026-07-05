@@ -72,6 +72,64 @@ func (r *SQLiteSensorRepository) GetByTimeRange(from, to time.Time, limit int) (
 	return scanReadings(rows)
 }
 
+var intervalStrftimeFormats = map[string]string{
+	"minute": "%Y-%m-%d %H:%M",
+	"hour":   "%Y-%m-%d %H",
+	"day":    "%Y-%m-%d",
+}
+
+var intervalParseFormats = map[string]string{
+	"minute": "2006-01-02 15:04",
+	"hour":   "2006-01-02 15",
+	"day":    "2006-01-02",
+}
+
+func (r *SQLiteSensorRepository) GetAggregated(from, to time.Time, interval string) ([]models.AggregatedReading, error) {
+	const sqliteTimeFormat = "2006-01-02 15:04:05"
+
+	strftimeFmt, ok := intervalStrftimeFormats[interval]
+	if !ok {
+		return nil, fmt.Errorf("invalid interval %q: must be minute, hour, or day", interval)
+	}
+	parseFmt := intervalParseFormats[interval]
+
+	rows, err := r.db.Query(
+		`SELECT
+			strftime(?, recorded_at) AS bucket,
+			AVG(temperature),
+			AVG(humidity),
+			AVG(light_level),
+			AVG(noise_level),
+			COUNT(*)
+		 FROM sensor_readings
+		 WHERE recorded_at BETWEEN ? AND ?
+		 GROUP BY bucket
+		 ORDER BY bucket DESC`,
+		strftimeFmt,
+		from.UTC().Format(sqliteTimeFormat),
+		to.UTC().Format(sqliteTimeFormat),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []models.AggregatedReading
+	for rows.Next() {
+		var bucketStr string
+		var agg models.AggregatedReading
+		if err := rows.Scan(&bucketStr, &agg.Temperature, &agg.Humidity, &agg.LightLevel, &agg.NoiseLevel, &agg.Count); err != nil {
+			return nil, err
+		}
+		agg.Bucket, err = time.ParseInLocation(parseFmt, bucketStr, time.UTC)
+		if err != nil {
+			return nil, fmt.Errorf("parsing bucket %q: %w", bucketStr, err)
+		}
+		results = append(results, agg)
+	}
+	return results, rows.Err()
+}
+
 func scanReadings(rows *sql.Rows) ([]models.SensorReading, error) {
 	var readings []models.SensorReading
 	for rows.Next() {

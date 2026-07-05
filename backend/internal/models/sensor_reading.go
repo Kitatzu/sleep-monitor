@@ -10,3 +10,12 @@ type SensorReading struct {
 	LightLevel  int       `json:"light_level"`
 	NoiseLevel  int       `json:"noise_level"`
 }
+
+type AggregatedReading struct {
+	Bucket      time.Time `json:"bucket"`
+	Temperature float64   `json:"temperature"`
+	Humidity    float64   `json:"humidity"`
+	LightLevel  float64   `json:"light_level"`
+	NoiseLevel  float64   `json:"noise_level"`
+	Count       int       `json:"count"`
+}
