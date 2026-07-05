@@ -17,7 +17,7 @@ import (
 
 const topic = "sm/sensors"
 
-func onMessage(repo repository.SensorRepository) mqtt.MessageHandler {
+func onMessage(repo repository.SensorRepository, hub *api.SSEHub) mqtt.MessageHandler {
 	return func(_ mqtt.Client, msg mqtt.Message) {
 		var reading models.SensorReading
 		if err := json.Unmarshal(msg.Payload(), &reading); err != nil {
@@ -44,6 +44,13 @@ func onMessage(repo repository.SensorRepository) mqtt.MessageHandler {
 			score.Light,
 			score.Noise,
 		)
+
+		event, _ := json.Marshal(struct {
+			Reading models.SensorReading `json:"reading"`
+			Score   scoring.SleepScore   `json:"score"`
+		}{Reading: reading, Score: score})
+
+		hub.Broadcast(event)
 	}
 }
 
@@ -57,6 +64,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v\n", err)
 	}
+
+	hub := api.NewSSEHub()
 
 	broker := os.Getenv("MQTT_BROKER")
 	if broker == "" {
@@ -73,16 +82,15 @@ func main() {
 	})
 
 	client := mqtt.NewClient(opts)
-
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatalf("Failed to connect to broker: %v\n", token.Error())
 	}
 
-	if token := client.Subscribe(topic, 1, onMessage(repo)); token.Wait() && token.Error() != nil {
+	if token := client.Subscribe(topic, 1, onMessage(repo, hub)); token.Wait() && token.Error() != nil {
 		log.Fatalf("Failed to subscribe to %s: %v\n", topic, token.Error())
 	}
 
-	log.Printf("Subscribed to topic: %s — waiting for sensor data...\n", topic)
+	log.Printf("Subscribed to topic: %s\n", topic)
 
 	httpPort := os.Getenv("HTTP_PORT")
 	if httpPort == "" {
@@ -90,7 +98,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	api.NewHandler(repo).RegisterRoutes(mux)
+	api.NewHandler(repo, hub).RegisterRoutes(mux)
 
 	log.Printf("HTTP server listening on :%s\n", httpPort)
 	log.Fatal(http.ListenAndServe(":"+httpPort, mux))

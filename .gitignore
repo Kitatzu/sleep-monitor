@@ -12,3 +12,6 @@ infra/mosquitto/log/*.log
 infra/mosquitto/data/
 
 .atl/
+
+# SQLite database (runtime artifact)
+*.db
