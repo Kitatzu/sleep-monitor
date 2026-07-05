@@ -84,16 +84,16 @@ var intervalParseFormats = map[string]string{
 	"day":    "2006-01-02",
 }
 
-func (r *SQLiteSensorRepository) GetAggregated(from, to time.Time, interval string) ([]models.AggregatedReading, error) {
+func (repo *SQLiteSensorRepository) GetAggregated(from, to time.Time, interval string) ([]models.AggregatedReading, error) {
 	const sqliteTimeFormat = "2006-01-02 15:04:05"
 
-	strftimeFmt, ok := intervalStrftimeFormats[interval]
-	if !ok {
+	strftimeFormat, validInterval := intervalStrftimeFormats[interval]
+	if !validInterval {
 		return nil, fmt.Errorf("invalid interval %q: must be minute, hour, or day", interval)
 	}
-	parseFmt := intervalParseFormats[interval]
+	parseFormat := intervalParseFormats[interval]
 
-	rows, err := r.db.Query(
+	rows, err := repo.db.Query(
 		`SELECT
 			strftime(?, recorded_at) AS bucket,
 			AVG(temperature),
@@ -105,7 +105,7 @@ func (r *SQLiteSensorRepository) GetAggregated(from, to time.Time, interval stri
 		 WHERE recorded_at BETWEEN ? AND ?
 		 GROUP BY bucket
 		 ORDER BY bucket DESC`,
-		strftimeFmt,
+		strftimeFormat,
 		from.UTC().Format(sqliteTimeFormat),
 		to.UTC().Format(sqliteTimeFormat),
 	)
@@ -116,16 +116,16 @@ func (r *SQLiteSensorRepository) GetAggregated(from, to time.Time, interval stri
 
 	var results []models.AggregatedReading
 	for rows.Next() {
-		var bucketStr string
-		var agg models.AggregatedReading
-		if err := rows.Scan(&bucketStr, &agg.Temperature, &agg.Humidity, &agg.LightLevel, &agg.NoiseLevel, &agg.Count); err != nil {
+		var bucketRaw string
+		var aggregatedReading models.AggregatedReading
+		if err := rows.Scan(&bucketRaw, &aggregatedReading.Temperature, &aggregatedReading.Humidity, &aggregatedReading.LightLevel, &aggregatedReading.NoiseLevel, &aggregatedReading.Count); err != nil {
 			return nil, err
 		}
-		agg.Bucket, err = time.ParseInLocation(parseFmt, bucketStr, time.UTC)
+		aggregatedReading.Bucket, err = time.ParseInLocation(parseFormat, bucketRaw, time.UTC)
 		if err != nil {
-			return nil, fmt.Errorf("parsing bucket %q: %w", bucketStr, err)
+			return nil, fmt.Errorf("parsing bucket %q: %w", bucketRaw, err)
 		}
-		results = append(results, agg)
+		results = append(results, aggregatedReading)
 	}
 	return results, rows.Err()
 }

@@ -97,9 +97,9 @@ func (h *Handler) getAggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	from, errFrom := time.Parse(time.RFC3339, fromStr)
-	to, errTo := time.Parse(time.RFC3339, toStr)
-	if errFrom != nil || errTo != nil {
+	from, fromParseErr := time.Parse(time.RFC3339, fromStr)
+	to, toParseErr := time.Parse(time.RFC3339, toStr)
+	if fromParseErr != nil || toParseErr != nil {
 		http.Error(w, "invalid time format, expected RFC3339 (e.g. 2006-01-02T15:04:05Z)", http.StatusBadRequest)
 		return
 	}
