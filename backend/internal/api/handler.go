@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"sleep-monitor/backend/internal/models"
 	"sleep-monitor/backend/internal/repository"
@@ -54,7 +55,24 @@ func (h *Handler) getReadings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	readings, err := h.repo.GetRecent(limit)
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+
+	var readings []models.SensorReading
+	var err error
+
+	if fromStr != "" || toStr != "" {
+		from, errFrom := time.Parse(time.RFC3339, fromStr)
+		to, errTo := time.Parse(time.RFC3339, toStr)
+		if errFrom != nil || errTo != nil {
+			http.Error(w, `invalid time format, expected RFC3339 (e.g. 2006-01-02T15:04:05Z)`, http.StatusBadRequest)
+			return
+		}
+		readings, err = h.repo.GetByTimeRange(from, to, limit)
+	} else {
+		readings, err = h.repo.GetRecent(limit)
+	}
+
 	if err != nil {
 		http.Error(w, "failed to fetch readings", http.StatusInternalServerError)
 		return

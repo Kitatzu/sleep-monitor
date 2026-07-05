@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "modernc.org/sqlite"
 	"sleep-monitor/backend/internal/models"
@@ -49,16 +50,37 @@ func (r *SQLiteSensorRepository) GetRecent(limit int) ([]models.SensorReading, e
 		return nil, err
 	}
 	defer rows.Close()
+	return scanReadings(rows)
+}
 
+func (r *SQLiteSensorRepository) GetByTimeRange(from, to time.Time, limit int) ([]models.SensorReading, error) {
+	const sqliteTimeFormat = "2006-01-02 15:04:05"
+	rows, err := r.db.Query(
+		`SELECT id, recorded_at, temperature, humidity, light_level, noise_level
+		 FROM sensor_readings
+		 WHERE recorded_at BETWEEN ? AND ?
+		 ORDER BY recorded_at DESC
+		 LIMIT ?`,
+		from.UTC().Format(sqliteTimeFormat),
+		to.UTC().Format(sqliteTimeFormat),
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanReadings(rows)
+}
+
+func scanReadings(rows *sql.Rows) ([]models.SensorReading, error) {
 	var readings []models.SensorReading
 	for rows.Next() {
-		var r models.SensorReading
-		if err := rows.Scan(&r.ID, &r.RecordedAt, &r.Temperature, &r.Humidity, &r.LightLevel, &r.NoiseLevel); err != nil {
+		var reading models.SensorReading
+		if err := rows.Scan(&reading.ID, &reading.RecordedAt, &reading.Temperature, &reading.Humidity, &reading.LightLevel, &reading.NoiseLevel); err != nil {
 			return nil, err
 		}
-		readings = append(readings, r)
+		readings = append(readings, reading)
 	}
-
 	return readings, rows.Err()
 }
 
