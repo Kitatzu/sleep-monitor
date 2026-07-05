@@ -28,6 +28,7 @@ func NewHandler(repo repository.SensorRepository, hub *SSEHub) *Handler {
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/readings/latest", h.getLatest)
+	mux.HandleFunc("GET /api/readings/aggregate", h.getAggregate)
 	mux.HandleFunc("GET /api/readings", h.getReadings)
 	mux.HandleFunc("GET /api/stream", h.stream)
 }
@@ -84,6 +85,32 @@ func (h *Handler) getReadings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, result)
+}
+
+func (h *Handler) getAggregate(w http.ResponseWriter, r *http.Request) {
+	fromStr := r.URL.Query().Get("from")
+	toStr := r.URL.Query().Get("to")
+	interval := r.URL.Query().Get("interval")
+
+	if fromStr == "" || toStr == "" || interval == "" {
+		http.Error(w, "missing required params: from, to, interval", http.StatusBadRequest)
+		return
+	}
+
+	from, fromParseErr := time.Parse(time.RFC3339, fromStr)
+	to, toParseErr := time.Parse(time.RFC3339, toStr)
+	if fromParseErr != nil || toParseErr != nil {
+		http.Error(w, "invalid time format, expected RFC3339 (e.g. 2006-01-02T15:04:05Z)", http.StatusBadRequest)
+		return
+	}
+
+	results, err := h.repo.GetAggregated(from, to, interval)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	respond(w, results)
 }
 
 func (h *Handler) stream(w http.ResponseWriter, r *http.Request) {
