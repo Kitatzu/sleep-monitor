@@ -140,7 +140,7 @@ export default function Charts() {
     }}>
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <h2 style={{
             fontSize: '0.75rem',
             fontWeight: 600,
@@ -176,7 +176,7 @@ export default function Charts() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
           gap: '0.875rem',
           opacity: loading ? 0.4 : 1,
           transition: 'opacity 0.2s ease',
