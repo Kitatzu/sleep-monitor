@@ -15,7 +15,11 @@ export function ArcGauge({ score }: { score: number }) {
   const fillPath = `M ${centerX - radius} ${centerY} A ${radius} ${radius} 0 0 1 ${arcEndX.toFixed(1)} ${arcEndY.toFixed(1)}`;
 
   return (
-    <svg viewBox="0 0 200 110" width="100%" style={{ maxWidth: 280, display: 'block', margin: '0 auto' }}>
+    <svg
+      viewBox="0 0 200 110"
+      width="100%"
+      style={{ maxWidth: 280, display: 'block', margin: '0 auto' }}
+    >
       <defs>
         <filter id="arc-glow" x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="4" result="blur" />
@@ -26,17 +30,38 @@ export function ArcGauge({ score }: { score: number }) {
         </filter>
       </defs>
 
-      <path d={trackPath} fill="none" stroke={BORDER} strokeWidth="8" strokeLinecap="round" />
+      <path
+        d={trackPath}
+        fill="none"
+        stroke={BORDER}
+        strokeWidth="8"
+        strokeLinecap="round"
+      />
 
       {score > 1 && (
-        <path d={fillPath} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" opacity="0.18" />
+        <path
+          d={fillPath}
+          fill="none"
+          stroke={color}
+          strokeWidth="14"
+          strokeLinecap="round"
+          opacity="0.18"
+        />
       )}
       {score > 1 && (
-        <path d={fillPath} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" filter="url(#arc-glow)" />
+        <path
+          d={fillPath}
+          fill="none"
+          stroke={color}
+          strokeWidth="8"
+          strokeLinecap="round"
+          filter="url(#arc-glow)"
+        />
       )}
 
       <text
-        x={centerX} y={centerY - 6}
+        x={centerX}
+        y={centerY - 6}
         textAnchor="middle"
         fill={color}
         fontSize="46"
@@ -47,7 +72,8 @@ export function ArcGauge({ score }: { score: number }) {
       </text>
 
       <text
-        x={centerX} y={centerY + 13}
+        x={centerX}
+        y={centerY + 13}
         textAnchor="middle"
         fill={MUTED}
         fontSize="9"

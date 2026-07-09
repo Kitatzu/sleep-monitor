@@ -1,0 +1,21 @@
+{
+  "name": "sleep-monitor",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint:frontend": "pnpm --dir frontend lint",
+    "lint:backend": "cd backend && golangci-lint run ./...",
+    "lint": "pnpm lint:frontend && pnpm lint:backend"
+  },
+  "devDependencies": {
+    "husky": "^9",
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "prettier-plugin-astro": "^0.14"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx}": "prettier --write",
+    "**/*.astro": "prettier --write",
+    "**/*.go": "gofmt -w"
+  }
+}
