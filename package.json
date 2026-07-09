@@ -2,7 +2,10 @@
   "name": "sleep-monitor",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint:frontend": "pnpm --dir frontend lint",
+    "lint:backend": "cd backend && golangci-lint run ./...",
+    "lint": "pnpm lint:frontend && pnpm lint:backend"
   },
   "devDependencies": {
     "husky": "^9",
