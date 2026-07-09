@@ -1,6 +1,7 @@
 ---
 import Dashboard from '../components/Dashboard';
 import Charts from '../components/Charts';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 ---
 
 <html lang="en">
@@ -13,7 +14,11 @@ import Charts from '../components/Charts';
     <title>Sleep Environment Monitor</title>
   </head>
   <body style="background: #080d18; margin: 0; padding: 0;">
-    <Dashboard client:load />
-    <Charts client:load />
+    <ErrorBoundary label="Dashboard unavailable" client:load>
+      <Dashboard client:load />
+    </ErrorBoundary>
+    <ErrorBoundary label="Charts unavailable" client:load>
+      <Charts client:load />
+    </ErrorBoundary>
   </body>
 </html>
