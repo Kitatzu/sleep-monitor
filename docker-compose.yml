@@ -1,0 +1,39 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./infra/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - MQTT_BROKER=tcp://mosquitto:1883
+      - DB_PATH=/data/sleep_monitor.db
+    volumes:
+      - sqlite-data:/data
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - PUBLIC_BACKEND_URL=http://localhost:8080
+    ports:
+      - "4321:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mosquitto-data:
+  mosquitto-log:
+  sqlite-data:
