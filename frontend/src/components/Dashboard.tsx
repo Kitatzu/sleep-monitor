@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { ArcGauge } from "./ArcGauge";
-import { SensorCard } from "./SensorCard";
-import { BG, SURFACE, BORDER, TEXT, MUTED, ACCENT } from "./theme";
+import { useState, useEffect } from 'react';
+import { ArcGauge } from './ArcGauge';
+import { SensorCard } from './SensorCard';
+import { BG, SURFACE, BORDER, TEXT, MUTED, ACCENT } from './theme';
 
 interface SensorReading {
   id: number;
@@ -25,7 +25,7 @@ interface SensorData {
   score: SleepScore;
 }
 
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = 'http://localhost:8080';
 
 export default function Dashboard() {
   const [data, setData] = useState<SensorData | null>(null);
@@ -51,36 +51,36 @@ export default function Dashboard() {
         `}</style>
         <div
           style={{
-            minHeight: "80vh",
+            minHeight: '80vh',
             background: BG,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "1rem",
-            fontFamily: "system-ui, -apple-system, sans-serif",
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '1rem',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
           <div
             style={{
               width: 28,
               height: 28,
-              borderRadius: "50%",
+              borderRadius: '50%',
               border: `2px solid ${BORDER}`,
-              borderTopColor: connected ? "#2dd4a0" : ACCENT,
-              animation: "spin 0.9s linear infinite",
+              borderTopColor: connected ? '#2dd4a0' : ACCENT,
+              animation: 'spin 0.9s linear infinite',
             }}
           />
           <p
             style={{
-              fontSize: "0.8rem",
+              fontSize: '0.8rem',
               color: MUTED,
-              letterSpacing: "0.06em",
+              letterSpacing: '0.06em',
             }}
           >
             {connected
-              ? "CONNECTED — WAITING FOR DATA"
-              : "CONNECTING TO BACKEND"}
+              ? 'CONNECTED — WAITING FOR DATA'
+              : 'CONNECTING TO BACKEND'}
           </p>
         </div>
       </>
@@ -97,43 +97,43 @@ export default function Dashboard() {
       `}</style>
       <div
         style={{
-          minHeight: "80vh",
+          minHeight: '80vh',
           background: BG,
-          padding: "clamp(1.5rem, 4vw, 2.5rem)",
-          paddingBottom: "0.75rem",
+          padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+          paddingBottom: '0.75rem',
           color: TEXT,
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
         <div
           style={{
             maxWidth: 720,
-            margin: "0 auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "1.25rem",
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
           }}
         >
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
             }}
           >
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.2rem",
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.2rem',
               }}
             >
               <h1
                 style={{
-                  fontSize: "0.75rem",
+                  fontSize: '0.75rem',
                   fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
                   color: MUTED,
                 }}
               >
@@ -141,104 +141,104 @@ export default function Dashboard() {
               </h1>
               <p
                 style={{
-                  fontSize: "0.7rem",
+                  fontSize: '0.7rem',
                   color: MUTED,
                   opacity: 0.5,
-                  fontVariantNumeric: "tabular-nums",
+                  fontVariantNumeric: 'tabular-nums',
                 }}
               >
                 {updatedAt
                   ? updatedAt.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
                     })
                   : new Date(reading.recorded_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
                     })}
               </p>
             </div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                fontSize: "0.7rem",
-                padding: "0.25rem 0.6rem",
-                borderRadius: "9999px",
-                border: `1px solid ${connected ? "#1b3d2d" : "#3d1b1b"}`,
-                color: connected ? "#2dd4a0" : "#ff6b6b",
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontSize: '0.7rem',
+                padding: '0.25rem 0.6rem',
+                borderRadius: '9999px',
+                border: `1px solid ${connected ? '#1b3d2d' : '#3d1b1b'}`,
+                color: connected ? '#2dd4a0' : '#ff6b6b',
                 background: connected
-                  ? "rgba(45,212,160,0.05)"
-                  : "rgba(255,107,107,0.05)",
-                letterSpacing: "0.06em",
+                  ? 'rgba(45,212,160,0.05)'
+                  : 'rgba(255,107,107,0.05)',
+                letterSpacing: '0.06em',
               }}
             >
               <span
                 style={{
                   width: 5,
                   height: 5,
-                  borderRadius: "50%",
-                  background: connected ? "#2dd4a0" : "#ff6b6b",
-                  display: "inline-block",
+                  borderRadius: '50%',
+                  background: connected ? '#2dd4a0' : '#ff6b6b',
+                  display: 'inline-block',
                   animation: connected
-                    ? "pulse 2s ease-in-out infinite"
-                    : "none",
+                    ? 'pulse 2s ease-in-out infinite'
+                    : 'none',
                 }}
               />
-              {connected ? "LIVE" : "OFFLINE"}
+              {connected ? 'LIVE' : 'OFFLINE'}
             </div>
           </div>
 
           <div
             style={{
               background: SURFACE,
-              borderRadius: "1rem",
-              padding: "1.75rem 1.5rem 1rem",
+              borderRadius: '1rem',
+              padding: '1.75rem 1.5rem 1rem',
               border: `1px solid ${BORDER}`,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
             }}
           >
             <ArcGauge score={score.total} />
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
                 maxWidth: 280,
-                marginTop: "0.5rem",
+                marginTop: '0.5rem',
               }}
             >
               <span
                 style={{
-                  fontSize: "0.6rem",
+                  fontSize: '0.6rem',
                   color: MUTED,
                   opacity: 0.5,
-                  letterSpacing: "0.08em",
+                  letterSpacing: '0.08em',
                 }}
               >
                 POOR
               </span>
               <span
                 style={{
-                  fontSize: "0.6rem",
+                  fontSize: '0.6rem',
                   color: MUTED,
                   opacity: 0.5,
-                  letterSpacing: "0.08em",
+                  letterSpacing: '0.08em',
                 }}
               >
                 SLEEP SCORE
               </span>
               <span
                 style={{
-                  fontSize: "0.6rem",
+                  fontSize: '0.6rem',
                   color: MUTED,
                   opacity: 0.5,
-                  letterSpacing: "0.08em",
+                  letterSpacing: '0.08em',
                 }}
               >
                 EXCELLENT
@@ -248,10 +248,10 @@ export default function Dashboard() {
 
           <div
             style={{
-              display: "grid",
+              display: 'grid',
               gridTemplateColumns:
-                "repeat(auto-fill, minmax(min(100%, 280px), 1fr))",
-              gap: "0.875rem",
+                'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+              gap: '0.875rem',
             }}
           >
             <SensorCard

@@ -1,3 +1,9 @@
+# Dependencies
+node_modules/
+
+# Husky
+.husky/_/
+
 # OS files
 .DS_Store
 Thumbs.db

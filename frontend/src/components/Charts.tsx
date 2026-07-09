@@ -60,9 +60,9 @@ const SENSOR_METRICS: Array<{
   color: string;
 }> = [
   { key: 'temperature', label: 'Temperature', unit: '°C', color: '#ff6b6b' },
-  { key: 'humidity',    label: 'Humidity',    unit: '%',  color: '#6b8eff' },
-  { key: 'lightLevel',  label: 'Light Level', unit: '%',  color: '#f5a623' },
-  { key: 'noiseLevel',  label: 'Noise Level', unit: '%',  color: '#2dd4a0' },
+  { key: 'humidity', label: 'Humidity', unit: '%', color: '#6b8eff' },
+  { key: 'lightLevel', label: 'Light Level', unit: '%', color: '#f5a623' },
+  { key: 'noiseLevel', label: 'Noise Level', unit: '%', color: '#2dd4a0' },
 ];
 
 function formatBucketTime(bucketString: string, preset: TimePreset): string {
@@ -73,33 +73,52 @@ function formatBucketTime(bucketString: string, preset: TimePreset): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function toChartDataPoints(readings: AggregatedReading[], preset: TimePreset): ChartDataPoint[] {
+function toChartDataPoints(
+  readings: AggregatedReading[],
+  preset: TimePreset
+): ChartDataPoint[] {
   return readings
     .slice()
     .reverse()
     .map((reading) => ({
       formattedTime: formatBucketTime(reading.bucket, preset),
-      temperature:   Math.round(reading.temperature * 10) / 10,
-      humidity:      Math.round(reading.humidity * 10) / 10,
-      lightLevel:    Math.round(reading.light_level * 10) / 10,
-      noiseLevel:    Math.round(reading.noise_level * 10) / 10,
+      temperature: Math.round(reading.temperature * 10) / 10,
+      humidity: Math.round(reading.humidity * 10) / 10,
+      lightLevel: Math.round(reading.light_level * 10) / 10,
+      noiseLevel: Math.round(reading.noise_level * 10) / 10,
     }));
 }
 
 function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{
-      background: SURFACE_RAISED,
-      border: `1px solid ${BORDER}`,
-      borderRadius: '0.5rem',
-      padding: '0.4rem 0.65rem',
-      fontSize: '0.72rem',
-      color: TEXT,
-      pointerEvents: 'none',
-    }}>
-      <p style={{ color: MUTED, marginBottom: '0.15rem', letterSpacing: '0.04em' }}>{label}</p>
-      <p style={{ color: payload[0].color, fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+    <div
+      style={{
+        background: SURFACE_RAISED,
+        border: `1px solid ${BORDER}`,
+        borderRadius: '0.5rem',
+        padding: '0.4rem 0.65rem',
+        fontSize: '0.72rem',
+        color: TEXT,
+        pointerEvents: 'none',
+      }}
+    >
+      <p
+        style={{
+          color: MUTED,
+          marginBottom: '0.15rem',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          color: payload[0].color,
+          fontVariantNumeric: 'tabular-nums',
+          fontWeight: 600,
+        }}
+      >
         {payload[0].value} {unit}
       </p>
     </div>
@@ -112,9 +131,13 @@ export default function Charts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const presetOption = TIME_PRESETS.find((option) => option.value === selectedPreset)!;
+    const presetOption = TIME_PRESETS.find(
+      (option) => option.value === selectedPreset
+    )!;
     const toDate = new Date();
-    const fromDate = new Date(toDate.getTime() - presetOption.hours * 60 * 60 * 1000);
+    const fromDate = new Date(
+      toDate.getTime() - presetOption.hours * 60 * 60 * 1000
+    );
 
     const requestUrl = new URL(`${BACKEND_URL}/api/readings/aggregate`);
     requestUrl.searchParams.set('from', fromDate.toISOString());
@@ -131,23 +154,42 @@ export default function Charts() {
   }, [selectedPreset]);
 
   return (
-    <div style={{
-      background: BG,
-      padding: 'clamp(1.5rem, 4vw, 2.5rem)',
-      paddingTop: '0.5rem',
-      color: TEXT,
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-    }}>
-      <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <h2 style={{
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: MUTED,
-          }}>
+    <div
+      style={{
+        background: BG,
+        padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+        paddingTop: '0.5rem',
+        color: TEXT,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 720,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: MUTED,
+            }}
+          >
             Historical Trends
           </h2>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -159,7 +201,10 @@ export default function Charts() {
                   padding: '0.25rem 0.6rem',
                   borderRadius: '0.375rem',
                   border: `1px solid ${selectedPreset === presetOption.value ? MUTED : BORDER}`,
-                  background: selectedPreset === presetOption.value ? SURFACE_RAISED : 'transparent',
+                  background:
+                    selectedPreset === presetOption.value
+                      ? SURFACE_RAISED
+                      : 'transparent',
                   color: selectedPreset === presetOption.value ? TEXT : MUTED,
                   fontSize: '0.7rem',
                   fontWeight: 600,
@@ -174,13 +219,16 @@ export default function Charts() {
           </div>
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-          gap: '0.875rem',
-          opacity: loading ? 0.4 : 1,
-          transition: 'opacity 0.2s ease',
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns:
+              'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+            gap: '0.875rem',
+            opacity: loading ? 0.4 : 1,
+            transition: 'opacity 0.2s ease',
+          }}
+        >
           {SENSOR_METRICS.map((metric) => (
             <div
               key={metric.key}
@@ -191,17 +239,22 @@ export default function Charts() {
                 padding: '1rem 1rem 0.5rem',
               }}
             >
-              <p style={{
-                fontSize: '0.65rem',
-                letterSpacing: '0.09em',
-                textTransform: 'uppercase',
-                color: MUTED,
-                marginBottom: '0.75rem',
-              }}>
+              <p
+                style={{
+                  fontSize: '0.65rem',
+                  letterSpacing: '0.09em',
+                  textTransform: 'uppercase',
+                  color: MUTED,
+                  marginBottom: '0.75rem',
+                }}
+              >
                 {metric.label}
               </p>
               <ResponsiveContainer width="100%" height={110}>
-                <LineChart data={chartDataPoints} margin={{ top: 2, right: 4, bottom: 0, left: -20 }}>
+                <LineChart
+                  data={chartDataPoints}
+                  margin={{ top: 2, right: 4, bottom: 0, left: -20 }}
+                >
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={BORDER}
@@ -237,7 +290,6 @@ export default function Charts() {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
