@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { BG, SURFACE, SURFACE_RAISED, BORDER, TEXT, MUTED } from './theme';
 
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
 interface AggregatedReading {
   bucket: string;

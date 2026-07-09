@@ -25,7 +25,7 @@ interface SensorData {
   score: SleepScore;
 }
 
-const BACKEND_URL = 'http://localhost:8080';
+const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
 export default function Dashboard() {
   const [data, setData] = useState<SensorData | null>(null);
