@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArcGauge } from './ArcGauge';
 import { SensorCard } from './SensorCard';
 import { useTheme } from './ThemeContext';
+import { scoreColor } from './theme';
 
 interface SensorReading {
   id: number;
@@ -185,12 +186,13 @@ export default function Dashboard() {
               </h1>
               <p
                 style={{
-                  fontSize: '0.7rem',
+                  fontSize: '0.85rem',
                   color: theme.MUTED,
-                  opacity: 0.5,
                   fontVariantNumeric: 'tabular-nums',
+                  letterSpacing: '0.04em',
                 }}
               >
+                Last update ·{' '}
                 {updatedAt
                   ? updatedAt.toLocaleTimeString([], {
                       hour: '2-digit',
@@ -274,42 +276,55 @@ export default function Dashboard() {
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                width: '100%',
-                maxWidth: 280,
-                marginTop: '0.5rem',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                marginTop: '0.875rem',
               }}
             >
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: theme.MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                POOR
-              </span>
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: theme.MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                SLEEP SCORE
-              </span>
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: theme.MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                EXCELLENT
-              </span>
+              {[
+                { label: 'TEMP', value: score.temperature_score },
+                { label: 'HUM', value: score.humidity_score },
+                { label: 'LIGHT', value: score.light_score },
+                { label: 'NOISE', value: score.noise_score },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '9999px',
+                    background: theme.BG,
+                    border: `1px solid ${theme.BORDER}`,
+                    fontSize: '0.65rem',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: scoreColor(value),
+                      display: 'inline-block',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ color: theme.MUTED, letterSpacing: '0.06em' }}>
+                    {label}
+                  </span>
+                  <span
+                    style={{
+                      color: scoreColor(value),
+                      fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 

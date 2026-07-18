@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -257,10 +257,30 @@ export default function Charts() {
                 {metric.label}
               </p>
               <ResponsiveContainer width="100%" height={110}>
-                <LineChart
+                <AreaChart
                   data={chartDataPoints}
                   margin={{ top: 2, right: 4, bottom: 0, left: -20 }}
                 >
+                  <defs>
+                    <linearGradient
+                      id={`gradient-${metric.key}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={metric.color}
+                        stopOpacity={0.12}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={metric.color}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={theme.BORDER}
@@ -283,15 +303,16 @@ export default function Charts() {
                     content={<ChartTooltip unit={metric.unit} />}
                     cursor={{ stroke: theme.BORDER, strokeWidth: 1 }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey={metric.key}
                     stroke={metric.color}
                     strokeWidth={2}
+                    fill={`url(#gradient-${metric.key})`}
                     dot={false}
                     activeDot={{ r: 3, strokeWidth: 0, fill: metric.color }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ))}

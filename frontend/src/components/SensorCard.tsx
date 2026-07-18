@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScoreBar } from './ScoreBar';
 import { useTheme } from './ThemeContext';
+import { scoreColor } from './theme';
 
 export type IconType = 'temperature' | 'humidity' | 'light' | 'noise';
+
+const IDEAL_RANGES: Record<IconType, string> = {
+  temperature: 'Ideal: 16–19 °C',
+  humidity: 'Ideal: 40–60 %',
+  light: 'Ideal: < 5 %',
+  noise: 'Ideal: < 30 %',
+};
 
 function Icon({ type }: { type: IconType }) {
   const base = {
@@ -78,6 +86,8 @@ export function SensorCard({
     }
   }, [value]);
 
+  const accentColor = flashing ? theme.FLASH_BORDER : scoreColor(score);
+
   return (
     <div
       style={{
@@ -88,23 +98,22 @@ export function SensorCard({
         flexDirection: 'column',
         gap: '0.875rem',
         border: `1px solid ${flashing ? theme.FLASH_BORDER : theme.BORDER}`,
+        borderLeft: `3px solid ${accentColor}`,
         transition: 'background 0.4s ease, border-color 0.4s ease',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          color: theme.MUTED,
-        }}
-      >
-        <Icon type={iconType} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+        <span
+          style={{ color: flashing ? theme.FLASH_TEXT : scoreColor(score) }}
+        >
+          <Icon type={iconType} />
+        </span>
         <span
           style={{
             fontSize: '0.7rem',
             letterSpacing: '0.09em',
             textTransform: 'uppercase',
+            color: theme.MUTED,
           }}
         >
           {label}
@@ -113,7 +122,7 @@ export function SensorCard({
       <div style={{ lineHeight: 1 }}>
         <span
           style={{
-            fontSize: '2.25rem',
+            fontSize: '2.5rem',
             fontWeight: 700,
             color: flashing ? theme.FLASH_TEXT : theme.TEXT,
             fontVariantNumeric: 'tabular-nums',
@@ -135,6 +144,17 @@ export function SensorCard({
         </span>
       </div>
       <ScoreBar score={score} />
+      <p
+        style={{
+          fontSize: '0.6rem',
+          color: theme.MUTED,
+          opacity: 0.5,
+          letterSpacing: '0.06em',
+          marginTop: '-0.35rem',
+        }}
+      >
+        {IDEAL_RANGES[iconType]}
+      </p>
     </div>
   );
 }
