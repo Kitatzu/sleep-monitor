@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
 
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
@@ -53,17 +54,12 @@ const TIME_PRESETS: PresetOption[] = [
   { label: '7D', value: '7d', hours: 168, interval: 'hour' },
 ];
 
-const SENSOR_METRICS: Array<{
+type SensorMetric = {
   key: keyof Omit<ChartDataPoint, 'formattedTime'>;
   label: string;
   unit: string;
   color: string;
-}> = [
-  { key: 'temperature', label: 'Temperature', unit: '°C', color: '#ff6b6b' },
-  { key: 'humidity', label: 'Humidity', unit: '%', color: '#6b8eff' },
-  { key: 'lightLevel', label: 'Light Level', unit: '%', color: '#f5a623' },
-  { key: 'noiseLevel', label: 'Noise Level', unit: '%', color: '#2dd4a0' },
-];
+};
 
 function formatBucketTime(bucketString: string, preset: TimePreset): string {
   const date = new Date(bucketString);
@@ -128,7 +124,30 @@ function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
 
 export default function Charts() {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState<TimePreset>('1h');
+
+  const sensorMetrics: SensorMetric[] = [
+    {
+      key: 'temperature',
+      label: t.sensors.temperature,
+      unit: '°C',
+      color: '#ff6b6b',
+    },
+    { key: 'humidity', label: t.sensors.humidity, unit: '%', color: '#6b8eff' },
+    {
+      key: 'lightLevel',
+      label: t.sensors.lightLevel,
+      unit: '%',
+      color: '#f5a623',
+    },
+    {
+      key: 'noiseLevel',
+      label: t.sensors.noiseLevel,
+      unit: '%',
+      color: '#2dd4a0',
+    },
+  ];
   const [chartDataPoints, setChartDataPoints] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -193,7 +212,7 @@ export default function Charts() {
               color: theme.MUTED,
             }}
           >
-            Historical Trends
+            {t.charts.title}
           </h2>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             {TIME_PRESETS.map((presetOption) => (
@@ -235,7 +254,7 @@ export default function Charts() {
             transition: 'opacity 0.2s ease',
           }}
         >
-          {SENSOR_METRICS.map((metric) => (
+          {sensorMetrics.map((metric) => (
             <div
               key={metric.key}
               style={{

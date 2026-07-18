@@ -1,16 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScoreBar } from './ScoreBar';
 import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
 import { scoreColor } from './theme';
 
 export type IconType = 'temperature' | 'humidity' | 'light' | 'noise';
-
-const IDEAL_RANGES: Record<IconType, string> = {
-  temperature: 'Ideal: 16–19 °C',
-  humidity: 'Ideal: 40–60 %',
-  light: 'Ideal: < 5 %',
-  noise: 'Ideal: < 30 %',
-};
 
 function Icon({ type }: { type: IconType }) {
   const base = {
@@ -73,6 +67,7 @@ export function SensorCard({
   iconType,
 }: SensorCardProps) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [flashing, setFlashing] = useState(false);
   const previousValue = useRef<number | null>(null);
 
@@ -153,7 +148,7 @@ export function SensorCard({
           marginTop: '-0.35rem',
         }}
       >
-        {IDEAL_RANGES[iconType]}
+        {t.idealRanges[iconType]}
       </p>
     </div>
   );

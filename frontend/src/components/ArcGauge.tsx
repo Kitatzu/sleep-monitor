@@ -1,8 +1,11 @@
 import { useTheme } from './ThemeContext';
-import { scoreColor, scoreLabel } from './theme';
+import { useLanguage } from './LanguageContext';
+import { scoreColor } from './theme';
+import { getScoreLabel } from './translations';
 
 export function ArcGauge({ score }: { score: number }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const color = scoreColor(score);
   const radius = 78;
   const centerX = 100;
@@ -82,7 +85,7 @@ export function ArcGauge({ score }: { score: number }) {
         fontFamily="system-ui, -apple-system, sans-serif"
         letterSpacing="0.14em"
       >
-        {scoreLabel(score)}
+        {getScoreLabel(score, t)}
       </text>
     </svg>
   );
