@@ -107,7 +107,7 @@ export const translations = {
   },
 } as const;
 
-export type Translations = (typeof translations)['en'];
+export type Translations = (typeof translations)[Language];
 
 export function getScoreLabel(score: number, t: Translations): string {
   if (score >= 80) return t.scores.excellent;
