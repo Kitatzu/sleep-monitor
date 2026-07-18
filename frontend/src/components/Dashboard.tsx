@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArcGauge } from './ArcGauge';
 import { SensorCard } from './SensorCard';
 import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
 import { scoreColor } from './theme';
 
 interface SensorReading {
@@ -71,7 +72,8 @@ function MoonIcon() {
 }
 
 export default function Dashboard() {
-  const { theme, isDark, toggle } = useTheme();
+  const { theme, isDark, toggle: toggleTheme } = useTheme();
+  const { t, toggle: toggleLanguage } = useLanguage();
   const [data, setData] = useState<SensorData | null>(null);
   const [connected, setConnected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -122,9 +124,7 @@ export default function Dashboard() {
               letterSpacing: '0.06em',
             }}
           >
-            {connected
-              ? 'CONNECTED — WAITING FOR DATA'
-              : 'CONNECTING TO BACKEND'}
+            {connected ? t.connection.waitingForData : t.connection.connecting}
           </p>
         </div>
       </>
@@ -182,7 +182,7 @@ export default function Dashboard() {
                   color: theme.MUTED,
                 }}
               >
-                Sleep Environment Monitor
+                {t.app.title}
               </h1>
               <p
                 style={{
@@ -192,7 +192,7 @@ export default function Dashboard() {
                   letterSpacing: '0.04em',
                 }}
               >
-                Last update ·{' '}
+                {t.app.lastUpdate} ·{' '}
                 {updatedAt
                   ? updatedAt.toLocaleTimeString([], {
                       hour: '2-digit',
@@ -210,8 +210,30 @@ export default function Dashboard() {
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
               <button
-                onClick={toggle}
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                onClick={toggleLanguage}
+                title={`Switch to ${t.language.switchTo === 'ES' ? 'Spanish' : 'English'}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 28,
+                  padding: '0 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: `1px solid ${theme.BORDER}`,
+                  background: theme.SURFACE,
+                  color: theme.MUTED,
+                  cursor: 'pointer',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {t.language.switchTo}
+              </button>
+              <button
+                onClick={toggleTheme}
+                title={isDark ? t.theme.switchToLight : t.theme.switchToDark}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -256,7 +278,7 @@ export default function Dashboard() {
                       : 'none',
                   }}
                 />
-                {connected ? 'LIVE' : 'OFFLINE'}
+                {connected ? t.connection.live : t.connection.offline}
               </div>
             </div>
           </div>
@@ -283,10 +305,13 @@ export default function Dashboard() {
               }}
             >
               {[
-                { label: 'TEMP', value: score.temperature_score },
-                { label: 'HUM', value: score.humidity_score },
-                { label: 'LIGHT', value: score.light_score },
-                { label: 'NOISE', value: score.noise_score },
+                {
+                  label: t.scores.subLabels.temp,
+                  value: score.temperature_score,
+                },
+                { label: t.scores.subLabels.hum, value: score.humidity_score },
+                { label: t.scores.subLabels.light, value: score.light_score },
+                { label: t.scores.subLabels.noise, value: score.noise_score },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -337,28 +362,28 @@ export default function Dashboard() {
             }}
           >
             <SensorCard
-              label="Temperature"
+              label={t.sensors.temperature}
               value={reading.temperature}
               unit="°C"
               score={score.temperature_score}
               iconType="temperature"
             />
             <SensorCard
-              label="Humidity"
+              label={t.sensors.humidity}
               value={reading.humidity}
               unit="%"
               score={score.humidity_score}
               iconType="humidity"
             />
             <SensorCard
-              label="Light Level"
+              label={t.sensors.lightLevel}
               value={reading.light_level}
               unit="%"
               score={score.light_score}
               iconType="light"
             />
             <SensorCard
-              label="Noise Level"
+              label={t.sensors.noiseLevel}
               value={reading.noise_level}
               unit="%"
               score={score.noise_score}
