@@ -23,7 +23,7 @@ interface AggregatedReading {
 }
 
 interface ChartDataPoint {
-  formattedTime: string;
+  timestamp: number;
   temperature: number;
   humidity: number;
   lightLevel: number;
@@ -43,8 +43,9 @@ interface PresetOption {
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{ value: number; color: string }>;
-  label?: string;
+  label?: number;
   unit: string;
+  preset: TimePreset;
 }
 
 const TIME_PRESETS: PresetOption[] = [
@@ -55,29 +56,26 @@ const TIME_PRESETS: PresetOption[] = [
 ];
 
 type SensorMetric = {
-  key: keyof Omit<ChartDataPoint, 'formattedTime'>;
+  key: keyof Omit<ChartDataPoint, 'timestamp'>;
   label: string;
   unit: string;
   color: string;
 };
 
-function formatBucketTime(bucketString: string, preset: TimePreset): string {
-  const date = new Date(bucketString);
+function formatTickTime(timestamp: number, preset: TimePreset): string {
+  const date = new Date(timestamp);
   if (preset === '7d') {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function toChartDataPoints(
-  readings: AggregatedReading[],
-  preset: TimePreset
-): ChartDataPoint[] {
+function toChartDataPoints(readings: AggregatedReading[]): ChartDataPoint[] {
   return readings
     .slice()
     .reverse()
     .map((reading) => ({
-      formattedTime: formatBucketTime(reading.bucket, preset),
+      timestamp: new Date(reading.bucket).getTime(),
       temperature: Math.round(reading.temperature * 10) / 10,
       humidity: Math.round(reading.humidity * 10) / 10,
       lightLevel: Math.round(reading.light_level * 10) / 10,
@@ -85,9 +83,9 @@ function toChartDataPoints(
     }));
 }
 
-function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
+function ChartTooltip({ active, payload, label, unit, preset }: TooltipProps) {
   const { theme } = useTheme();
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length || label == null) return null;
   return (
     <div
       style={{
@@ -107,7 +105,7 @@ function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
           letterSpacing: '0.04em',
         }}
       >
-        {label}
+        {formatTickTime(label, preset)}
       </p>
       <p
         style={{
@@ -126,6 +124,12 @@ export default function Charts() {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState<TimePreset>('1h');
+  const [timeRange, setTimeRange] = useState<{ from: number; to: number }>(
+    () => ({
+      from: Date.now() - 60 * 60 * 1000,
+      to: Date.now(),
+    })
+  );
 
   const sensorMetrics: SensorMetric[] = [
     {
@@ -152,6 +156,7 @@ export default function Charts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     const presetOption = TIME_PRESETS.find(
       (option) => option.value === selectedPreset
     )!;
@@ -160,18 +165,25 @@ export default function Charts() {
       toDate.getTime() - presetOption.hours * 60 * 60 * 1000
     );
 
+    setTimeRange({ from: fromDate.getTime(), to: toDate.getTime() });
+
     const requestUrl = new URL(`${BACKEND_URL}/api/readings/aggregate`);
     requestUrl.searchParams.set('from', fromDate.toISOString());
     requestUrl.searchParams.set('to', toDate.toISOString());
     requestUrl.searchParams.set('interval', presetOption.interval);
 
     setLoading(true);
-    fetch(requestUrl.toString())
+    fetch(requestUrl.toString(), { signal: controller.signal })
       .then((response) => response.json())
       .then((readings: AggregatedReading[] | null) => {
-        setChartDataPoints(toChartDataPoints(readings ?? [], selectedPreset));
+        setChartDataPoints(toChartDataPoints(readings ?? []));
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') throw error;
       })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [selectedPreset]);
 
   return (
@@ -306,11 +318,17 @@ export default function Charts() {
                     vertical={false}
                   />
                   <XAxis
-                    dataKey="formattedTime"
+                    dataKey="timestamp"
+                    type="number"
+                    scale="time"
+                    domain={[timeRange.from, timeRange.to]}
+                    ticks={[timeRange.from, timeRange.to]}
+                    tickFormatter={(timestamp) =>
+                      formatTickTime(timestamp, selectedPreset)
+                    }
                     tick={{ fontSize: 9, fill: theme.MUTED }}
                     tickLine={false}
                     axisLine={false}
-                    interval="preserveStartEnd"
                   />
                   <YAxis
                     tick={{ fontSize: 9, fill: theme.MUTED }}
@@ -319,7 +337,12 @@ export default function Charts() {
                     width={36}
                   />
                   <Tooltip
-                    content={<ChartTooltip unit={metric.unit} />}
+                    content={
+                      <ChartTooltip
+                        unit={metric.unit}
+                        preset={selectedPreset}
+                      />
+                    }
                     cursor={{ stroke: theme.BORDER, strokeWidth: 1 }}
                   />
                   <Area
