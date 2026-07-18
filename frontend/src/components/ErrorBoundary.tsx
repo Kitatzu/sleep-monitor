@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from 'react';
-import { BG, SURFACE, BORDER, TEXT, MUTED } from './theme';
+import { ThemeContext } from './ThemeContext';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -14,6 +14,9 @@ export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
+  static contextType = ThemeContext;
+  declare context: React.ContextType<typeof ThemeContext>;
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { error: null };
@@ -24,19 +27,21 @@ export class ErrorBoundary extends Component<
   }
 
   render() {
+    const { theme } = this.context;
+
     if (this.state.error) {
       return (
         <div
           style={{
             minHeight: '12rem',
-            background: BG,
+            background: theme.BG,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '0.5rem',
             padding: '2rem',
-            border: `1px solid ${BORDER}`,
+            border: `1px solid ${theme.BORDER}`,
             borderRadius: '0.75rem',
             fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
@@ -55,7 +60,7 @@ export class ErrorBoundary extends Component<
           <p
             style={{
               fontSize: '0.7rem',
-              color: MUTED,
+              color: theme.MUTED,
               maxWidth: '28rem',
               textAlign: 'center',
             }}
@@ -68,9 +73,9 @@ export class ErrorBoundary extends Component<
               marginTop: '0.5rem',
               padding: '0.3rem 0.75rem',
               borderRadius: '0.375rem',
-              border: `1px solid ${BORDER}`,
-              background: SURFACE,
-              color: TEXT,
+              border: `1px solid ${theme.BORDER}`,
+              background: theme.SURFACE,
+              color: theme.TEXT,
               fontSize: '0.7rem',
               cursor: 'pointer',
             }}
