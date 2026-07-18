@@ -8,7 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { BG, SURFACE, SURFACE_RAISED, BORDER, TEXT, MUTED } from './theme';
+import { useTheme } from './ThemeContext';
 
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
@@ -90,22 +90,23 @@ function toChartDataPoints(
 }
 
 function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
+  const { theme } = useTheme();
   if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        background: SURFACE_RAISED,
-        border: `1px solid ${BORDER}`,
+        background: theme.SURFACE_RAISED,
+        border: `1px solid ${theme.BORDER}`,
         borderRadius: '0.5rem',
         padding: '0.4rem 0.65rem',
         fontSize: '0.72rem',
-        color: TEXT,
+        color: theme.TEXT,
         pointerEvents: 'none',
       }}
     >
       <p
         style={{
-          color: MUTED,
+          color: theme.MUTED,
           marginBottom: '0.15rem',
           letterSpacing: '0.04em',
         }}
@@ -126,6 +127,7 @@ function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
 }
 
 export default function Charts() {
+  const { theme } = useTheme();
   const [selectedPreset, setSelectedPreset] = useState<TimePreset>('1h');
   const [chartDataPoints, setChartDataPoints] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,11 +158,12 @@ export default function Charts() {
   return (
     <div
       style={{
-        background: BG,
+        background: theme.BG,
         padding: 'clamp(1.5rem, 4vw, 2.5rem)',
         paddingTop: '0.5rem',
-        color: TEXT,
+        color: theme.TEXT,
         fontFamily: 'system-ui, -apple-system, sans-serif',
+        transition: 'background 0.3s ease, color 0.3s ease',
       }}
     >
       <div
@@ -187,7 +190,7 @@ export default function Charts() {
               fontWeight: 600,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: MUTED,
+              color: theme.MUTED,
             }}
           >
             Historical Trends
@@ -200,12 +203,15 @@ export default function Charts() {
                 style={{
                   padding: '0.25rem 0.6rem',
                   borderRadius: '0.375rem',
-                  border: `1px solid ${selectedPreset === presetOption.value ? MUTED : BORDER}`,
+                  border: `1px solid ${selectedPreset === presetOption.value ? theme.MUTED : theme.BORDER}`,
                   background:
                     selectedPreset === presetOption.value
-                      ? SURFACE_RAISED
+                      ? theme.SURFACE_RAISED
                       : 'transparent',
-                  color: selectedPreset === presetOption.value ? TEXT : MUTED,
+                  color:
+                    selectedPreset === presetOption.value
+                      ? theme.TEXT
+                      : theme.MUTED,
                   fontSize: '0.7rem',
                   fontWeight: 600,
                   letterSpacing: '0.06em',
@@ -233,8 +239,8 @@ export default function Charts() {
             <div
               key={metric.key}
               style={{
-                background: SURFACE,
-                border: `1px solid ${BORDER}`,
+                background: theme.SURFACE,
+                border: `1px solid ${theme.BORDER}`,
                 borderRadius: '0.75rem',
                 padding: '1rem 1rem 0.5rem',
               }}
@@ -244,7 +250,7 @@ export default function Charts() {
                   fontSize: '0.65rem',
                   letterSpacing: '0.09em',
                   textTransform: 'uppercase',
-                  color: MUTED,
+                  color: theme.MUTED,
                   marginBottom: '0.75rem',
                 }}
               >
@@ -257,25 +263,25 @@ export default function Charts() {
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke={BORDER}
+                    stroke={theme.BORDER}
                     vertical={false}
                   />
                   <XAxis
                     dataKey="formattedTime"
-                    tick={{ fontSize: 9, fill: MUTED }}
+                    tick={{ fontSize: 9, fill: theme.MUTED }}
                     tickLine={false}
                     axisLine={false}
                     interval="preserveStartEnd"
                   />
                   <YAxis
-                    tick={{ fontSize: 9, fill: MUTED }}
+                    tick={{ fontSize: 9, fill: theme.MUTED }}
                     tickLine={false}
                     axisLine={false}
                     width={36}
                   />
                   <Tooltip
                     content={<ChartTooltip unit={metric.unit} />}
-                    cursor={{ stroke: BORDER, strokeWidth: 1 }}
+                    cursor={{ stroke: theme.BORDER, strokeWidth: 1 }}
                   />
                   <Line
                     type="monotone"

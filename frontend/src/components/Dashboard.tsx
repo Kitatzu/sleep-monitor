@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArcGauge } from './ArcGauge';
 import { SensorCard } from './SensorCard';
-import { BG, SURFACE, BORDER, TEXT, MUTED, ACCENT } from './theme';
+import { useTheme } from './ThemeContext';
 
 interface SensorReading {
   id: number;
@@ -27,7 +27,50 @@ interface SensorData {
 
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
+function SunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
 export default function Dashboard() {
+  const { theme, isDark, toggle } = useTheme();
   const [data, setData] = useState<SensorData | null>(null);
   const [connected, setConnected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -52,7 +95,7 @@ export default function Dashboard() {
         <div
           style={{
             minHeight: '80vh',
-            background: BG,
+            background: theme.BG,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -66,15 +109,15 @@ export default function Dashboard() {
               width: 28,
               height: 28,
               borderRadius: '50%',
-              border: `2px solid ${BORDER}`,
-              borderTopColor: connected ? '#2dd4a0' : ACCENT,
+              border: `2px solid ${theme.BORDER}`,
+              borderTopColor: connected ? '#2dd4a0' : theme.ACCENT,
               animation: 'spin 0.9s linear infinite',
             }}
           />
           <p
             style={{
               fontSize: '0.8rem',
-              color: MUTED,
+              color: theme.MUTED,
               letterSpacing: '0.06em',
             }}
           >
@@ -98,11 +141,12 @@ export default function Dashboard() {
       <div
         style={{
           minHeight: '80vh',
-          background: BG,
+          background: theme.BG,
           padding: 'clamp(1.5rem, 4vw, 2.5rem)',
           paddingBottom: '0.75rem',
-          color: TEXT,
+          color: theme.TEXT,
           fontFamily: 'system-ui, -apple-system, sans-serif',
+          transition: 'background 0.3s ease, color 0.3s ease',
         }}
       >
         <div
@@ -134,7 +178,7 @@ export default function Dashboard() {
                   fontWeight: 600,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: MUTED,
+                  color: theme.MUTED,
                 }}
               >
                 Sleep Environment Monitor
@@ -142,7 +186,7 @@ export default function Dashboard() {
               <p
                 style={{
                   fontSize: '0.7rem',
-                  color: MUTED,
+                  color: theme.MUTED,
                   opacity: 0.5,
                   fontVariantNumeric: 'tabular-nums',
                 }}
@@ -161,43 +205,66 @@ export default function Dashboard() {
               </p>
             </div>
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                fontSize: '0.7rem',
-                padding: '0.25rem 0.6rem',
-                borderRadius: '9999px',
-                border: `1px solid ${connected ? '#1b3d2d' : '#3d1b1b'}`,
-                color: connected ? '#2dd4a0' : '#ff6b6b',
-                background: connected
-                  ? 'rgba(45,212,160,0.05)'
-                  : 'rgba(255,107,107,0.05)',
-                letterSpacing: '0.06em',
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
-              <span
+              <button
+                onClick={toggle}
+                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
                 style={{
-                  width: 5,
-                  height: 5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
                   borderRadius: '50%',
-                  background: connected ? '#2dd4a0' : '#ff6b6b',
-                  display: 'inline-block',
-                  animation: connected
-                    ? 'pulse 2s ease-in-out infinite'
-                    : 'none',
+                  border: `1px solid ${theme.BORDER}`,
+                  background: theme.SURFACE,
+                  color: theme.MUTED,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
-              />
-              {connected ? 'LIVE' : 'OFFLINE'}
+              >
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.7rem',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '9999px',
+                  border: `1px solid ${connected ? '#1b3d2d' : '#3d1b1b'}`,
+                  color: connected ? '#2dd4a0' : '#ff6b6b',
+                  background: connected
+                    ? 'rgba(45,212,160,0.05)'
+                    : 'rgba(255,107,107,0.05)',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: connected ? '#2dd4a0' : '#ff6b6b',
+                    display: 'inline-block',
+                    animation: connected
+                      ? 'pulse 2s ease-in-out infinite'
+                      : 'none',
+                  }}
+                />
+                {connected ? 'LIVE' : 'OFFLINE'}
+              </div>
             </div>
           </div>
 
           <div
             style={{
-              background: SURFACE,
+              background: theme.SURFACE,
               borderRadius: '1rem',
               padding: '1.75rem 1.5rem 1rem',
-              border: `1px solid ${BORDER}`,
+              border: `1px solid ${theme.BORDER}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -216,7 +283,7 @@ export default function Dashboard() {
               <span
                 style={{
                   fontSize: '0.6rem',
-                  color: MUTED,
+                  color: theme.MUTED,
                   opacity: 0.5,
                   letterSpacing: '0.08em',
                 }}
@@ -226,7 +293,7 @@ export default function Dashboard() {
               <span
                 style={{
                   fontSize: '0.6rem',
-                  color: MUTED,
+                  color: theme.MUTED,
                   opacity: 0.5,
                   letterSpacing: '0.08em',
                 }}
@@ -236,7 +303,7 @@ export default function Dashboard() {
               <span
                 style={{
                   fontSize: '0.6rem',
-                  color: MUTED,
+                  color: theme.MUTED,
                   opacity: 0.5,
                   letterSpacing: '0.08em',
                 }}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScoreBar } from './ScoreBar';
-import { SURFACE_RAISED, BORDER, TEXT, MUTED } from './theme';
+import { useTheme } from './ThemeContext';
 
 export type IconType = 'temperature' | 'humidity' | 'light' | 'noise';
 
@@ -64,6 +64,7 @@ export function SensorCard({
   score,
   iconType,
 }: SensorCardProps) {
+  const { theme } = useTheme();
   const [flashing, setFlashing] = useState(false);
   const previousValue = useRef<number | null>(null);
 
@@ -80,13 +81,13 @@ export function SensorCard({
   return (
     <div
       style={{
-        background: flashing ? '#1a2a3a' : SURFACE_RAISED,
+        background: flashing ? theme.FLASH_BG : theme.SURFACE_RAISED,
         borderRadius: '0.75rem',
         padding: '1.25rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.875rem',
-        border: `1px solid ${flashing ? '#2d4a6a' : BORDER}`,
+        border: `1px solid ${flashing ? theme.FLASH_BORDER : theme.BORDER}`,
         transition: 'background 0.4s ease, border-color 0.4s ease',
       }}
     >
@@ -95,7 +96,7 @@ export function SensorCard({
           display: 'flex',
           alignItems: 'center',
           gap: '0.45rem',
-          color: MUTED,
+          color: theme.MUTED,
         }}
       >
         <Icon type={iconType} />
@@ -114,7 +115,7 @@ export function SensorCard({
           style={{
             fontSize: '2.25rem',
             fontWeight: 700,
-            color: flashing ? '#a8c4f0' : TEXT,
+            color: flashing ? theme.FLASH_TEXT : theme.TEXT,
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
             transition: 'color 0.4s ease',
@@ -126,7 +127,7 @@ export function SensorCard({
           style={{
             fontSize: '1rem',
             fontWeight: 400,
-            color: MUTED,
+            color: theme.MUTED,
             marginLeft: '0.2em',
           }}
         >
