@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { ArcGauge } from './ArcGauge';
 import { SensorCard } from './SensorCard';
-import { BG, SURFACE, BORDER, TEXT, MUTED, ACCENT } from './theme';
+import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
+import { scoreColor } from './theme';
 
 interface SensorReading {
   id: number;
@@ -27,7 +29,51 @@ interface SensorData {
 
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
+function SunIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
 export default function Dashboard() {
+  const { theme, isDark, toggle: toggleTheme } = useTheme();
+  const { t, toggle: toggleLanguage } = useLanguage();
   const [data, setData] = useState<SensorData | null>(null);
   const [connected, setConnected] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -52,7 +98,7 @@ export default function Dashboard() {
         <div
           style={{
             minHeight: '80vh',
-            background: BG,
+            background: theme.BG,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -66,21 +112,19 @@ export default function Dashboard() {
               width: 28,
               height: 28,
               borderRadius: '50%',
-              border: `2px solid ${BORDER}`,
-              borderTopColor: connected ? '#2dd4a0' : ACCENT,
+              border: `2px solid ${theme.BORDER}`,
+              borderTopColor: connected ? '#2dd4a0' : theme.ACCENT,
               animation: 'spin 0.9s linear infinite',
             }}
           />
           <p
             style={{
               fontSize: '0.8rem',
-              color: MUTED,
+              color: theme.MUTED,
               letterSpacing: '0.06em',
             }}
           >
-            {connected
-              ? 'CONNECTED — WAITING FOR DATA'
-              : 'CONNECTING TO BACKEND'}
+            {connected ? t.connection.waitingForData : t.connection.connecting}
           </p>
         </div>
       </>
@@ -98,11 +142,12 @@ export default function Dashboard() {
       <div
         style={{
           minHeight: '80vh',
-          background: BG,
+          background: theme.BG,
           padding: 'clamp(1.5rem, 4vw, 2.5rem)',
           paddingBottom: '0.75rem',
-          color: TEXT,
+          color: theme.TEXT,
           fontFamily: 'system-ui, -apple-system, sans-serif',
+          transition: 'background 0.3s ease, color 0.3s ease',
         }}
       >
         <div
@@ -134,19 +179,20 @@ export default function Dashboard() {
                   fontWeight: 600,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  color: MUTED,
+                  color: theme.MUTED,
                 }}
               >
-                Sleep Environment Monitor
+                {t.app.title}
               </h1>
               <p
                 style={{
-                  fontSize: '0.7rem',
-                  color: MUTED,
-                  opacity: 0.5,
+                  fontSize: '0.85rem',
+                  color: theme.MUTED,
                   fontVariantNumeric: 'tabular-nums',
+                  letterSpacing: '0.04em',
                 }}
               >
+                {t.app.lastUpdate} ·{' '}
                 {updatedAt
                   ? updatedAt.toLocaleTimeString([], {
                       hour: '2-digit',
@@ -161,43 +207,88 @@ export default function Dashboard() {
               </p>
             </div>
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                fontSize: '0.7rem',
-                padding: '0.25rem 0.6rem',
-                borderRadius: '9999px',
-                border: `1px solid ${connected ? '#1b3d2d' : '#3d1b1b'}`,
-                color: connected ? '#2dd4a0' : '#ff6b6b',
-                background: connected
-                  ? 'rgba(45,212,160,0.05)'
-                  : 'rgba(255,107,107,0.05)',
-                letterSpacing: '0.06em',
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             >
-              <span
+              <button
+                onClick={toggleLanguage}
+                title={`Switch to ${t.language.switchTo === 'ES' ? 'Spanish' : 'English'}`}
                 style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  background: connected ? '#2dd4a0' : '#ff6b6b',
-                  display: 'inline-block',
-                  animation: connected
-                    ? 'pulse 2s ease-in-out infinite'
-                    : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 28,
+                  padding: '0 0.5rem',
+                  borderRadius: '0.375rem',
+                  border: `1px solid ${theme.BORDER}`,
+                  background: theme.SURFACE,
+                  color: theme.MUTED,
+                  cursor: 'pointer',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  transition: 'all 0.15s ease',
                 }}
-              />
-              {connected ? 'LIVE' : 'OFFLINE'}
+              >
+                {t.language.switchTo}
+              </button>
+              <button
+                onClick={toggleTheme}
+                title={isDark ? t.theme.switchToLight : t.theme.switchToDark}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  border: `1px solid ${theme.BORDER}`,
+                  background: theme.SURFACE,
+                  color: theme.MUTED,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {isDark ? <SunIcon /> : <MoonIcon />}
+              </button>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.7rem',
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '9999px',
+                  border: `1px solid ${connected ? '#1b3d2d' : '#3d1b1b'}`,
+                  color: connected ? '#2dd4a0' : '#ff6b6b',
+                  background: connected
+                    ? 'rgba(45,212,160,0.05)'
+                    : 'rgba(255,107,107,0.05)',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    background: connected ? '#2dd4a0' : '#ff6b6b',
+                    display: 'inline-block',
+                    animation: connected
+                      ? 'pulse 2s ease-in-out infinite'
+                      : 'none',
+                  }}
+                />
+                {connected ? t.connection.live : t.connection.offline}
+              </div>
             </div>
           </div>
 
           <div
             style={{
-              background: SURFACE,
+              background: theme.SURFACE,
               borderRadius: '1rem',
               padding: '1.75rem 1.5rem 1rem',
-              border: `1px solid ${BORDER}`,
+              border: `1px solid ${theme.BORDER}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -207,42 +298,58 @@ export default function Dashboard() {
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                width: '100%',
-                maxWidth: 280,
-                marginTop: '0.5rem',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                marginTop: '0.875rem',
               }}
             >
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                POOR
-              </span>
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                SLEEP SCORE
-              </span>
-              <span
-                style={{
-                  fontSize: '0.6rem',
-                  color: MUTED,
-                  opacity: 0.5,
-                  letterSpacing: '0.08em',
-                }}
-              >
-                EXCELLENT
-              </span>
+              {[
+                {
+                  label: t.scores.subLabels.temp,
+                  value: score.temperature_score,
+                },
+                { label: t.scores.subLabels.hum, value: score.humidity_score },
+                { label: t.scores.subLabels.light, value: score.light_score },
+                { label: t.scores.subLabels.noise, value: score.noise_score },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '9999px',
+                    background: theme.BG,
+                    border: `1px solid ${theme.BORDER}`,
+                    fontSize: '0.65rem',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: scoreColor(value),
+                      display: 'inline-block',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ color: theme.MUTED, letterSpacing: '0.06em' }}>
+                    {label}
+                  </span>
+                  <span
+                    style={{
+                      color: scoreColor(value),
+                      fontVariantNumeric: 'tabular-nums',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -255,28 +362,28 @@ export default function Dashboard() {
             }}
           >
             <SensorCard
-              label="Temperature"
+              label={t.sensors.temperature}
               value={reading.temperature}
               unit="°C"
               score={score.temperature_score}
               iconType="temperature"
             />
             <SensorCard
-              label="Humidity"
+              label={t.sensors.humidity}
               value={reading.humidity}
               unit="%"
               score={score.humidity_score}
               iconType="humidity"
             />
             <SensorCard
-              label="Light Level"
+              label={t.sensors.lightLevel}
               value={reading.light_level}
               unit="%"
               score={score.light_score}
               iconType="light"
             />
             <SensorCard
-              label="Noise Level"
+              label={t.sensors.noiseLevel}
               value={reading.noise_level}
               unit="%"
               score={score.noise_score}

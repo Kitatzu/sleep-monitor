@@ -1,6 +1,11 @@
-import { BORDER, MUTED, scoreColor, scoreLabel } from './theme';
+import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
+import { scoreColor } from './theme';
+import { getScoreLabel } from './translations';
 
 export function ArcGauge({ score }: { score: number }) {
+  const { theme } = useTheme();
+  const { t } = useLanguage();
   const color = scoreColor(score);
   const radius = 78;
   const centerX = 100;
@@ -33,7 +38,7 @@ export function ArcGauge({ score }: { score: number }) {
       <path
         d={trackPath}
         fill="none"
-        stroke={BORDER}
+        stroke={theme.BORDER}
         strokeWidth="8"
         strokeLinecap="round"
       />
@@ -75,12 +80,12 @@ export function ArcGauge({ score }: { score: number }) {
         x={centerX}
         y={centerY + 13}
         textAnchor="middle"
-        fill={MUTED}
+        fill={theme.MUTED}
         fontSize="9"
         fontFamily="system-ui, -apple-system, sans-serif"
         letterSpacing="0.14em"
       >
-        {scoreLabel(score)}
+        {getScoreLabel(score, t)}
       </text>
     </svg>
   );

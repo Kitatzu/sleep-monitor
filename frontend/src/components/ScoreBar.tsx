@@ -1,6 +1,8 @@
-import { BORDER, scoreColor } from './theme';
+import { useTheme } from './ThemeContext';
+import { scoreColor } from './theme';
 
 export function ScoreBar({ score }: { score: number }) {
+  const { theme } = useTheme();
   const color = scoreColor(score);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -8,7 +10,7 @@ export function ScoreBar({ score }: { score: number }) {
         style={{
           flex: 1,
           height: '3px',
-          background: BORDER,
+          background: theme.BORDER,
           borderRadius: '2px',
           overflow: 'hidden',
         }}

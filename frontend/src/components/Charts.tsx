@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { BG, SURFACE, SURFACE_RAISED, BORDER, TEXT, MUTED } from './theme';
+import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
 
 const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL;
 
@@ -22,7 +23,7 @@ interface AggregatedReading {
 }
 
 interface ChartDataPoint {
-  formattedTime: string;
+  timestamp: number;
   temperature: number;
   humidity: number;
   lightLevel: number;
@@ -42,8 +43,9 @@ interface PresetOption {
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{ value: number; color: string }>;
-  label?: string;
+  label?: number;
   unit: string;
+  preset: TimePreset;
 }
 
 const TIME_PRESETS: PresetOption[] = [
@@ -53,35 +55,27 @@ const TIME_PRESETS: PresetOption[] = [
   { label: '7D', value: '7d', hours: 168, interval: 'hour' },
 ];
 
-const SENSOR_METRICS: Array<{
-  key: keyof Omit<ChartDataPoint, 'formattedTime'>;
+type SensorMetric = {
+  key: keyof Omit<ChartDataPoint, 'timestamp'>;
   label: string;
   unit: string;
   color: string;
-}> = [
-  { key: 'temperature', label: 'Temperature', unit: '°C', color: '#ff6b6b' },
-  { key: 'humidity', label: 'Humidity', unit: '%', color: '#6b8eff' },
-  { key: 'lightLevel', label: 'Light Level', unit: '%', color: '#f5a623' },
-  { key: 'noiseLevel', label: 'Noise Level', unit: '%', color: '#2dd4a0' },
-];
+};
 
-function formatBucketTime(bucketString: string, preset: TimePreset): string {
-  const date = new Date(bucketString);
+function formatTickTime(timestamp: number, preset: TimePreset): string {
+  const date = new Date(timestamp);
   if (preset === '7d') {
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function toChartDataPoints(
-  readings: AggregatedReading[],
-  preset: TimePreset
-): ChartDataPoint[] {
+function toChartDataPoints(readings: AggregatedReading[]): ChartDataPoint[] {
   return readings
     .slice()
     .reverse()
     .map((reading) => ({
-      formattedTime: formatBucketTime(reading.bucket, preset),
+      timestamp: new Date(reading.bucket).getTime(),
       temperature: Math.round(reading.temperature * 10) / 10,
       humidity: Math.round(reading.humidity * 10) / 10,
       lightLevel: Math.round(reading.light_level * 10) / 10,
@@ -89,28 +83,29 @@ function toChartDataPoints(
     }));
 }
 
-function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
-  if (!active || !payload?.length) return null;
+function ChartTooltip({ active, payload, label, unit, preset }: TooltipProps) {
+  const { theme } = useTheme();
+  if (!active || !payload?.length || label == null) return null;
   return (
     <div
       style={{
-        background: SURFACE_RAISED,
-        border: `1px solid ${BORDER}`,
+        background: theme.SURFACE_RAISED,
+        border: `1px solid ${theme.BORDER}`,
         borderRadius: '0.5rem',
         padding: '0.4rem 0.65rem',
         fontSize: '0.72rem',
-        color: TEXT,
+        color: theme.TEXT,
         pointerEvents: 'none',
       }}
     >
       <p
         style={{
-          color: MUTED,
+          color: theme.MUTED,
           marginBottom: '0.15rem',
           letterSpacing: '0.04em',
         }}
       >
-        {label}
+        {formatTickTime(label, preset)}
       </p>
       <p
         style={{
@@ -126,11 +121,42 @@ function ChartTooltip({ active, payload, label, unit }: TooltipProps) {
 }
 
 export default function Charts() {
+  const { theme } = useTheme();
+  const { t } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState<TimePreset>('1h');
+  const [timeRange, setTimeRange] = useState<{ from: number; to: number }>(
+    () => ({
+      from: Date.now() - 60 * 60 * 1000,
+      to: Date.now(),
+    })
+  );
+
+  const sensorMetrics: SensorMetric[] = [
+    {
+      key: 'temperature',
+      label: t.sensors.temperature,
+      unit: '°C',
+      color: '#ff6b6b',
+    },
+    { key: 'humidity', label: t.sensors.humidity, unit: '%', color: '#6b8eff' },
+    {
+      key: 'lightLevel',
+      label: t.sensors.lightLevel,
+      unit: '%',
+      color: '#f5a623',
+    },
+    {
+      key: 'noiseLevel',
+      label: t.sensors.noiseLevel,
+      unit: '%',
+      color: '#2dd4a0',
+    },
+  ];
   const [chartDataPoints, setChartDataPoints] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     const presetOption = TIME_PRESETS.find(
       (option) => option.value === selectedPreset
     )!;
@@ -139,28 +165,36 @@ export default function Charts() {
       toDate.getTime() - presetOption.hours * 60 * 60 * 1000
     );
 
+    setTimeRange({ from: fromDate.getTime(), to: toDate.getTime() });
+
     const requestUrl = new URL(`${BACKEND_URL}/api/readings/aggregate`);
     requestUrl.searchParams.set('from', fromDate.toISOString());
     requestUrl.searchParams.set('to', toDate.toISOString());
     requestUrl.searchParams.set('interval', presetOption.interval);
 
     setLoading(true);
-    fetch(requestUrl.toString())
+    fetch(requestUrl.toString(), { signal: controller.signal })
       .then((response) => response.json())
       .then((readings: AggregatedReading[] | null) => {
-        setChartDataPoints(toChartDataPoints(readings ?? [], selectedPreset));
+        setChartDataPoints(toChartDataPoints(readings ?? []));
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') throw error;
       })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [selectedPreset]);
 
   return (
     <div
       style={{
-        background: BG,
+        background: theme.BG,
         padding: 'clamp(1.5rem, 4vw, 2.5rem)',
         paddingTop: '0.5rem',
-        color: TEXT,
+        color: theme.TEXT,
         fontFamily: 'system-ui, -apple-system, sans-serif',
+        transition: 'background 0.3s ease, color 0.3s ease',
       }}
     >
       <div
@@ -187,10 +221,10 @@ export default function Charts() {
               fontWeight: 600,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: MUTED,
+              color: theme.MUTED,
             }}
           >
-            Historical Trends
+            {t.charts.title}
           </h2>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             {TIME_PRESETS.map((presetOption) => (
@@ -200,12 +234,15 @@ export default function Charts() {
                 style={{
                   padding: '0.25rem 0.6rem',
                   borderRadius: '0.375rem',
-                  border: `1px solid ${selectedPreset === presetOption.value ? MUTED : BORDER}`,
+                  border: `1px solid ${selectedPreset === presetOption.value ? theme.MUTED : theme.BORDER}`,
                   background:
                     selectedPreset === presetOption.value
-                      ? SURFACE_RAISED
+                      ? theme.SURFACE_RAISED
                       : 'transparent',
-                  color: selectedPreset === presetOption.value ? TEXT : MUTED,
+                  color:
+                    selectedPreset === presetOption.value
+                      ? theme.TEXT
+                      : theme.MUTED,
                   fontSize: '0.7rem',
                   fontWeight: 600,
                   letterSpacing: '0.06em',
@@ -229,12 +266,12 @@ export default function Charts() {
             transition: 'opacity 0.2s ease',
           }}
         >
-          {SENSOR_METRICS.map((metric) => (
+          {sensorMetrics.map((metric) => (
             <div
               key={metric.key}
               style={{
-                background: SURFACE,
-                border: `1px solid ${BORDER}`,
+                background: theme.SURFACE,
+                border: `1px solid ${theme.BORDER}`,
                 borderRadius: '0.75rem',
                 padding: '1rem 1rem 0.5rem',
               }}
@@ -244,48 +281,80 @@ export default function Charts() {
                   fontSize: '0.65rem',
                   letterSpacing: '0.09em',
                   textTransform: 'uppercase',
-                  color: MUTED,
+                  color: theme.MUTED,
                   marginBottom: '0.75rem',
                 }}
               >
                 {metric.label}
               </p>
               <ResponsiveContainer width="100%" height={110}>
-                <LineChart
+                <AreaChart
                   data={chartDataPoints}
                   margin={{ top: 2, right: 4, bottom: 0, left: -20 }}
                 >
+                  <defs>
+                    <linearGradient
+                      id={`gradient-${metric.key}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={metric.color}
+                        stopOpacity={0.12}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={metric.color}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke={BORDER}
+                    stroke={theme.BORDER}
                     vertical={false}
                   />
                   <XAxis
-                    dataKey="formattedTime"
-                    tick={{ fontSize: 9, fill: MUTED }}
+                    dataKey="timestamp"
+                    type="number"
+                    scale="time"
+                    domain={[timeRange.from, timeRange.to]}
+                    ticks={[timeRange.from, timeRange.to]}
+                    tickFormatter={(timestamp) =>
+                      formatTickTime(timestamp, selectedPreset)
+                    }
+                    tick={{ fontSize: 9, fill: theme.MUTED }}
                     tickLine={false}
                     axisLine={false}
-                    interval="preserveStartEnd"
                   />
                   <YAxis
-                    tick={{ fontSize: 9, fill: MUTED }}
+                    tick={{ fontSize: 9, fill: theme.MUTED }}
                     tickLine={false}
                     axisLine={false}
                     width={36}
                   />
                   <Tooltip
-                    content={<ChartTooltip unit={metric.unit} />}
-                    cursor={{ stroke: BORDER, strokeWidth: 1 }}
+                    content={
+                      <ChartTooltip
+                        unit={metric.unit}
+                        preset={selectedPreset}
+                      />
+                    }
+                    cursor={{ stroke: theme.BORDER, strokeWidth: 1 }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey={metric.key}
                     stroke={metric.color}
                     strokeWidth={2}
+                    fill={`url(#gradient-${metric.key})`}
                     dot={false}
                     activeDot={{ r: 3, strokeWidth: 0, fill: metric.color }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ))}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ScoreBar } from './ScoreBar';
-import { SURFACE_RAISED, BORDER, TEXT, MUTED } from './theme';
+import { useTheme } from './ThemeContext';
+import { useLanguage } from './LanguageContext';
+import { scoreColor } from './theme';
 
 export type IconType = 'temperature' | 'humidity' | 'light' | 'noise';
 
@@ -64,6 +66,8 @@ export function SensorCard({
   score,
   iconType,
 }: SensorCardProps) {
+  const { theme } = useTheme();
+  const { t } = useLanguage();
   const [flashing, setFlashing] = useState(false);
   const previousValue = useRef<number | null>(null);
 
@@ -77,33 +81,34 @@ export function SensorCard({
     }
   }, [value]);
 
+  const accentColor = flashing ? theme.FLASH_BORDER : scoreColor(score);
+
   return (
     <div
       style={{
-        background: flashing ? '#1a2a3a' : SURFACE_RAISED,
+        background: flashing ? theme.FLASH_BG : theme.SURFACE_RAISED,
         borderRadius: '0.75rem',
         padding: '1.25rem',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.875rem',
-        border: `1px solid ${flashing ? '#2d4a6a' : BORDER}`,
+        border: `1px solid ${flashing ? theme.FLASH_BORDER : theme.BORDER}`,
+        borderLeft: `3px solid ${accentColor}`,
         transition: 'background 0.4s ease, border-color 0.4s ease',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-          color: MUTED,
-        }}
-      >
-        <Icon type={iconType} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+        <span
+          style={{ color: flashing ? theme.FLASH_TEXT : scoreColor(score) }}
+        >
+          <Icon type={iconType} />
+        </span>
         <span
           style={{
             fontSize: '0.7rem',
             letterSpacing: '0.09em',
             textTransform: 'uppercase',
+            color: theme.MUTED,
           }}
         >
           {label}
@@ -112,9 +117,9 @@ export function SensorCard({
       <div style={{ lineHeight: 1 }}>
         <span
           style={{
-            fontSize: '2.25rem',
+            fontSize: '2.5rem',
             fontWeight: 700,
-            color: flashing ? '#a8c4f0' : TEXT,
+            color: flashing ? theme.FLASH_TEXT : theme.TEXT,
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
             transition: 'color 0.4s ease',
@@ -126,7 +131,7 @@ export function SensorCard({
           style={{
             fontSize: '1rem',
             fontWeight: 400,
-            color: MUTED,
+            color: theme.MUTED,
             marginLeft: '0.2em',
           }}
         >
@@ -134,6 +139,17 @@ export function SensorCard({
         </span>
       </div>
       <ScoreBar score={score} />
+      <p
+        style={{
+          fontSize: '0.6rem',
+          color: theme.MUTED,
+          opacity: 0.5,
+          letterSpacing: '0.06em',
+          marginTop: '-0.35rem',
+        }}
+      >
+        {t.idealRanges[iconType]}
+      </p>
     </div>
   );
 }

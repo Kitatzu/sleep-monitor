@@ -1,7 +1,5 @@
 ---
-import Dashboard from '../components/Dashboard';
-import Charts from '../components/Charts';
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import AppShell from '../components/AppShell';
 ---
 
 <html lang="en">
@@ -12,13 +10,15 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>Sleep Environment Monitor</title>
+    <script is:inline>
+      const stored = localStorage.getItem('theme');
+      const prefersDark = stored
+        ? stored === 'dark'
+        : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.body.style.background = prefersDark ? '#080d18' : '#f4f6fb';
+    </script>
   </head>
-  <body style="background: #080d18; margin: 0; padding: 0;">
-    <ErrorBoundary label="Dashboard unavailable" client:load>
-      <Dashboard client:load />
-    </ErrorBoundary>
-    <ErrorBoundary label="Charts unavailable" client:load>
-      <Charts client:load />
-    </ErrorBoundary>
+  <body style="margin: 0; padding: 0;">
+    <AppShell client:load />
   </body>
 </html>
